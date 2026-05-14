@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💼 Personal Investment Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3d;
+    --gold: #d4a843;
+    --gold-dim: #8a6b25;
+    --green: #3dd68c;
+    --red: #f05a5a;
+    --blue: #5b8af0;
+    --purple: #9b6dff;
+    --text: #e8e8f0;
+    --text-dim: #7a7a9a;
+    --text-muted: #4a4a6a;
+  }
+
+  html.light {
+    --bg: #f4f3ef;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #dddbd3;
+    --gold: #b8860b;
+    --gold-dim: #c9a84c;
+    --green: #1a8f5a;
+    --red: #d63c3c;
+    --blue: #2d5fcc;
+    --purple: #6a3fcb;
+    --text: #1a1a2e;
+    --text-dim: #5a5a7a;
+    --text-muted: #9a9ab0;
+  }
+
+  html.light body::before {
+    background: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(45,95,204,0.05) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 60% at 80% 80%, rgba(184,134,11,0.04) 0%, transparent 50%);
+  }
+
+  /* Theme toggle */
+  .theme-toggle {
+    width: 44px; height: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+  .theme-toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--gold);
+    transition: transform 0.25s cubic-bezier(.4,0,.2,1), background 0.2s;
+  }
+  html.light .theme-toggle::after { transform: translateX(20px); }
+  .theme-toggle-wrap {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 11px; color: var(--text-muted);
+  }
+  .theme-icon { font-size: 13px; line-height: 1; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background 0.25s, color 0.25s;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(91,138,240,0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 60% at 80% 80%, rgba(212,168,67,0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .header-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--gold) 0%, #f0c86a 50%, var(--gold) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+  }
+
+  .header-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .last-updated {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  /* Nav tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .tab {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border-radius: 6px;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  .tab:hover { border-color: var(--gold-dim); color: var(--text); }
+  .tab.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #0a0a0f;
+    font-weight: 700;
+  }
+
+  /* Panels */
+  .panel { display: none; animation: fadeIn 0.2s ease; }
+  .panel.active { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Cards grid */
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .grid-4 { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .card-header {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .stat-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px; }
+  .stat-value { font-size: 22px; font-weight: 500; color: var(--text); line-height: 1.1; }
+  .stat-value.gold { color: var(--gold); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.red { color: var(--red); }
+  .stat-value.blue { color: var(--blue); }
+  .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+  /* Portfolio table */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid rgba(42,42,61,0.5); transition: background 0.1s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 11px 12px; color: var(--text); }
+  tbody tr:last-child { border-bottom: none; font-weight: 600; background: var(--surface2); }
+  .text-right { text-align: right; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .badge-green { background: rgba(61,214,140,0.12); color: var(--green); border: 1px solid rgba(61,214,140,0.2); }
+  .badge-red { background: rgba(240,90,90,0.12); color: var(--red); border: 1px solid rgba(240,90,90,0.2); }
+  .badge-dim { background: rgba(122,122,154,0.1); color: var(--text-dim); border: 1px solid var(--border); }
+
+  /* Rates section */
+  .rates-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+
+  .rate-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .rate-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; }
+  .rate-value { font-size: 18px; color: var(--gold); font-weight: 500; }
+
+  /* Editable inputs */
+  .rate-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--gold-dim);
+    color: var(--gold);
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    width: 100%;
+    outline: none;
+    padding: 2px 0;
+    transition: border-color 0.15s;
+  }
+
+  .rate-input:focus { border-color: var(--gold); }
+
+  .save-btn {
+    margin-top: 16px;
+    padding: 10px 24px;
+    background: var(--gold);
+    color: #0a0a0f;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .save-btn:hover { opacity: 0.85; }
+
+  /* Allocation bars */
+  .alloc-row { margin-bottom: 14px; }
+  .alloc-header { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; }
+  .alloc-name { color: var(--text); }
+  .alloc-pct { color: var(--text-dim); }
+  .alloc-bar-bg { height: 6px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+  .alloc-bar-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+
+  /* Algeria purchasing power */
+  .pp-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(42,42,61,0.5);
+    font-size: 12px;
+  }
+  .pp-row:last-child { border-bottom: none; }
+  .pp-asset { color: var(--text-dim); }
+  .pp-values { display: flex; gap: 16px; text-align: right; }
+  .pp-official { color: var(--text-muted); }
+  .pp-parallel { color: var(--green); }
+  .pp-premium { color: var(--blue); font-size: 10px; }
+
+  /* Gold table */
+  .gold-pill {
+    display: inline-block;
+    width: 10px; height: 10px;
+    background: linear-gradient(135deg, var(--gold), #f0c86a);
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+
+  /* Net worth chart */
+  .chart-container { width: 100%; height: 200px; position: relative; }
+  canvas { width: 100% !important; }
+
+  /* Section title */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    margin-top: 24px;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  /* Input form */
+  .form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .form-group { flex: 1; min-width: 140px; }
+  .form-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+  .form-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus { border-color: var(--gold-dim); }
+
+  .add-btn {
+    padding: 9px 20px;
+    background: var(--surface2);
+    color: var(--green);
+    border: 1px solid rgba(61,214,140,0.3);
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    align-self: flex-end;
+  }
+  .add-btn:hover { background: rgba(61,214,140,0.08); }
+
+  .del-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    transition: color 0.15s;
+  }
+  .del-btn:hover { color: var(--red); }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  /* Total highlight */
+  .total-row td { background: var(--surface2) !important; font-weight: 600; }
+
+  /* Tooltip helper */
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); }
+
+  @media (max-width: 600px) {
+    .stat-value { font-size: 18px; }
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+    thead th, tbody td { padding: 8px 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div>
+      <div class="header-title">💼 Investment Tracker</div>
+      <div class="header-sub">UAE / Algeria Dual Portfolio — values auto-calculate from rates</div>
+    </div>
+    <div style="display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap;">
+      <div class="last-updated">
+        <div style="color:var(--text-dim); margin-bottom:3px;">LAST UPDATED</div>
+        <div id="lastUpdated" style="color:var(--text);">—</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <button onclick="exportData()" style="padding:7px 14px; background:var(--surface); border:1px solid var(--border); color:var(--text-dim); font-family:'DM Mono',monospace; font-size:11px; border-radius:7px; cursor:pointer; transition:all 0.15s; white-space:nowrap;" onmouseover="this.style.borderColor='var(--gold-dim)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬇ Export JSON</button>
+        <label style="padding:7px 14px; background:var(--surface); border:1px solid var(--border); color:var(--text-dim); font-family:'DM Mono',monospace; font-size:11px; border-radius:7px; cursor:pointer; transition:all 0.15s; white-space:nowrap; text-align:center;" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬆ Import JSON<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+        <div class="theme-toggle-wrap" style="justify-content:center; margin-top:2px;">
+          <span class="theme-icon">🌙</span>
+          <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark mode"></button>
+          <span class="theme-icon">☀️</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Import success toast -->
+  <div id="import-toast" style="position:fixed; bottom:24px; right:24px; background:var(--surface); border:1px solid var(--green); color:var(--green); font-family:'DM Mono',monospace; font-size:12px; padding:12px 20px; border-radius:10px; z-index:999; opacity:0; transition:opacity 0.3s; pointer-events:none;">✓ Data imported successfully!</div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+    <button class="tab" onclick="showTab('rates')">📈 Rates</button>
+    <button class="tab" onclick="showTab('gold')">🥇 Gold</button>
+    <button class="tab" onclick="showTab('cash')">💵 Cash</button>
+    <button class="tab" onclick="showTab('property')">🏠 Property</button>
+    <button class="tab" onclick="showTab('crypto')">₿ Crypto</button>
+    <button class="tab" onclick="showTab('history')">📉 Net Worth</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard" class="panel active">
+
+    <div class="grid grid-4" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="stat-label">TOTAL PORTFOLIO</div>
+        <div class="stat-value gold" id="d-total-aed">—</div>
+        <div class="stat-sub">AED</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">TOTAL IN EUR</div>
+        <div class="stat-value blue" id="d-total-eur">—</div>
+        <div class="stat-sub">parallel rate</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">TOTAL IN DZD</div>
+        <div class="stat-value" id="d-total-dzd">—</div>
+        <div class="stat-sub">parallel rate</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">GOLD P&L</div>
+        <div class="stat-value" id="d-gold-pnl">—</div>
+        <div class="stat-sub" id="d-gold-pnl-pct">—</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">CRYPTO P&L</div>
+        <div class="stat-value" id="d-crypto-pnl">—</div>
+        <div class="stat-sub" id="d-crypto-pnl-pct">—</div>
+      </div>
+    </div>
+
+    <!-- Portfolio Summary -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">Portfolio Summary</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th class="text-right">Qty / Amount</th>
+            <th class="text-right">Cost (AED)</th>
+            <th class="text-right">Value (AED)</th>
+            <th class="text-right">P&L (AED)</th>
+            <th class="text-right">P&L %</th>
+            <th class="text-right">Value (€)</th>
+          </tr>
+        </thead>
+        <tbody id="portfolio-table"></tbody>
+      </table>
+    </div>
+
+    <div class="grid grid-2">
+      <!-- Allocation -->
+      <div class="card">
+        <div class="card-header">Allocation vs Target</div>
+        <div id="allocation-bars"></div>
+      </div>
+
+      <!-- Algeria Purchasing Power -->
+      <div class="card">
+        <div class="card-header">Algeria Purchasing Power</div>
+        <div id="purchasing-power"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RATES -->
+  <div id="tab-rates" class="panel">
+    <div class="card">
+      <div class="card-header">Market Rates — Edit &amp; Save</div>
+      <div class="rates-grid" id="rates-grid"></div>
+      <div style="margin-top:20px; display:flex; align-items:center; gap:16px;">
+        <button class="save-btn" onclick="saveRates()">💾 Save &amp; Recalculate</button>
+        <span id="rates-saved" style="font-size:11px; color:var(--green); opacity:0; transition:opacity 0.3s;">✓ Saved!</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="card">
+      <div class="card-header">Derived Rates</div>
+      <div class="rates-grid" id="derived-rates"></div>
+    </div>
+  </div>
+
+  <!-- GOLD -->
+  <div id="tab-gold" class="panel">
+    <div class="grid grid-4" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="stat-label">TOTAL GRAMS</div>
+        <div class="stat-value gold" id="g-grams">—</div>
+        <div class="stat-sub">physical gold</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">CURRENT VALUE</div>
+        <div class="stat-value" id="g-value-aed">—</div>
+        <div class="stat-sub">AED (18K adj.)</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">TOTAL P&L</div>
+        <div class="stat-value" id="g-pnl">—</div>
+        <div class="stat-sub" id="g-pnl-pct">—</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">AVG COST/G</div>
+        <div class="stat-value blue" id="g-avg-cost">—</div>
+        <div class="stat-sub">vs current <span id="g-spot">—</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">Gold Purchases Log</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th class="text-right">Grams</th>
+            <th class="text-right">18K Equiv.</th>
+            <th class="text-right">Karat</th>
+            <th class="text-right">Price/g (AED)</th>
+            <th class="text-right">Cost (AED)</th>
+            <th class="text-right">Value (AED)</th>
+            <th class="text-right">P&L</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="gold-table"></tbody>
+      </table>
+      <div class="divider"></div>
+      <div style="font-size:12px; color:var(--text-dim); margin-bottom:12px;">Add Purchase</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">DATE</label><input type="date" class="form-input" id="g-date"></div>
+        <div class="form-group"><label class="form-label">GRAMS</label><input type="number" class="form-input" id="g-new-grams" placeholder="15.79" step="0.01"></div>
+        <div class="form-group"><label class="form-label">KARAT</label><input type="number" class="form-input" id="g-karat" placeholder="24" value="24"></div>
+        <div class="form-group"><label class="form-label">PRICE/g (AED)</label><input type="number" class="form-input" id="g-price" placeholder="569.5" step="0.01"></div>
+        <button class="add-btn" onclick="addGold()">+ Add</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Top-Up Analyser</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">PLANNED ADDITIONAL GRAMS</label>
+          <input type="number" class="form-input" id="topup-grams" value="10" oninput="calcTopup()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">EST. PURCHASE PRICE (AED/g)</label>
+          <input type="number" class="form-input" id="topup-price" oninput="calcTopup()">
+        </div>
+      </div>
+      <div class="grid grid-3" style="margin-top:12px;" id="topup-results"></div>
+    </div>
+  </div>
+
+  <!-- CASH -->
+  <div id="tab-cash" class="panel">
+    <div class="grid grid-3" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="stat-label">AED CASH</div>
+        <div class="stat-value gold" id="c-aed">—</div>
+        <div class="stat-sub">Emergency buffer: <span id="c-buffer">50,000</span></div>
+        <div style="margin-top:8px;font-size:11px;">Investable surplus: <span id="c-surplus" style="color:var(--green)">—</span> AED</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">EUR SAVINGS</div>
+        <div class="stat-value blue" id="c-eur">—</div>
+        <div class="stat-sub" id="c-eur-aed">≈ — AED</div>
+        <div style="margin-top:8px;font-size:11px;">In DZD (parallel): <span id="c-eur-dzd" style="color:var(--green)">—</span></div>
+      </div>
+      <div class="card">
+        <div class="stat-label">DZD CASH</div>
+        <div class="stat-value" id="c-dzd">—</div>
+        <div class="stat-sub" id="c-dzd-eur">≈ — EUR</div>
+        <div style="margin-top:8px;font-size:11px;">In AED: <span id="c-dzd-aed" style="color:var(--text-dim)">—</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">Edit Cash Balances</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">AED BALANCE</label><input type="number" class="form-input" id="edit-aed" oninput="updateCash()"></div>
+        <div class="form-group"><label class="form-label">EUR BALANCE</label><input type="number" class="form-input" id="edit-eur" oninput="updateCash()"></div>
+        <div class="form-group"><label class="form-label">DZD BALANCE</label><input type="number" class="form-input" id="edit-dzd" oninput="updateCash()"></div>
+        <div class="form-group"><label class="form-label">EMERGENCY BUFFER (AED)</label><input type="number" class="form-input" id="edit-buffer" oninput="updateCash()"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Monthly Savings Tracker (EUR)</div>
+      <table>
+        <thead>
+          <tr><th>Month</th><th class="text-right">Saved (EUR)</th><th class="text-right">Running Total (EUR)</th></tr>
+        </thead>
+        <tbody id="savings-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PROPERTY -->
+  <div id="tab-property" class="panel">
+    <div class="grid grid-2" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-header">Property Details</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">STATUS</label><input type="text" class="form-input" id="p-status" value="Target / Not yet purchased"></div>
+          <div class="form-group"><label class="form-label">LOCATION</label><input type="text" class="form-input" id="p-location" value="Tlemcen, Algeria"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">TYPE</label><input type="text" class="form-input" id="p-type" value="F3 Apartment"></div>
+          <div class="form-group"><label class="form-label">PURCHASE DATE</label><input type="date" class="form-input" id="p-date"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">TARGET PRICE (DZD)</label><input type="number" class="form-input" id="p-target" oninput="calcProperty()"></div>
+          <div class="form-group"><label class="form-label">ACTUAL PRICE (DZD)</label><input type="number" class="form-input" id="p-actual" oninput="calcProperty()"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">CURRENT VALUE (DZD)</label><input type="number" class="form-input" id="p-value" oninput="calcProperty()"></div>
+          <div class="form-group"><label class="form-label">MONTHLY RENT (DZD)</label><input type="number" class="form-input" id="p-rent" oninput="calcProperty()"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">ANNUAL APPRECIATION %</label><input type="number" class="form-input" id="p-appreciation" value="8" oninput="calcProperty()"></div>
+          <div class="form-group"><label class="form-label">ANNUAL RENT GROWTH %</label><input type="number" class="form-input" id="p-rent-growth" value="0" oninput="calcProperty()"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">Hard Currency Equivalent</div>
+        <div id="property-stats"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">5-Year Projection</div>
+      <table>
+        <thead><tr><th>Year</th><th class="text-right">Property Value (DZD)</th><th class="text-right">Cumul. Rent (DZD)</th><th class="text-right">Value (EUR parallel)</th></tr></thead>
+        <tbody id="property-projection"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- NET WORTH HISTORY -->
+  <div id="tab-history" class="panel">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">Log Monthly Snapshot</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">DATE</label><input type="date" class="form-input" id="h-date"></div>
+        <button class="add-btn" onclick="logSnapshot()">📸 Log Current Values</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Net Worth History</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th class="text-right">AED Cash</th>
+            <th class="text-right">EUR (AED)</th>
+            <th class="text-right">Gold (AED)</th>
+            <th class="text-right">DZD Cash (AED)</th>
+            <th class="text-right">Property (AED)</th>
+            <th class="text-right">TOTAL (AED)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="history-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CRYPTO -->
+  <div id="tab-crypto" class="panel">
+
+    <div class="grid grid-4" style="margin-bottom:20px;">
+      <div class="card">
+        <div class="stat-label">TOTAL VALUE</div>
+        <div class="stat-value" id="cr-total-usd" style="color:#5b8af0">—</div>
+        <div class="stat-sub">USD</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">TOTAL IN AED</div>
+        <div class="stat-value gold" id="cr-total-aed">—</div>
+        <div class="stat-sub">at current rates</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">TOTAL P&L</div>
+        <div class="stat-value" id="cr-total-pnl">—</div>
+        <div class="stat-sub" id="cr-total-pnl-pct">—</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">TOTAL IN EUR</div>
+        <div class="stat-value" id="cr-total-eur" style="color:#9b6dff">—</div>
+        <div class="stat-sub">parallel rate</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">Holdings</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Symbol</th>
+            <th class="text-right">Qty</th>
+            <th class="text-right">Avg Buy (USD)</th>
+            <th class="text-right">Current (USD)</th>
+            <th class="text-right">Cost (USD)</th>
+            <th class="text-right">Value (USD)</th>
+            <th class="text-right">P&L (USD)</th>
+            <th class="text-right">P&L %</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="crypto-table"></tbody>
+      </table>
+
+      <div class="divider"></div>
+      <div style="font-size:12px; color:var(--text-dim); margin-bottom:12px;">Add Holding</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">NAME</label><input type="text" class="form-input" id="cr-name" placeholder="Bitcoin"></div>
+        <div class="form-group"><label class="form-label">SYMBOL</label><input type="text" class="form-input" id="cr-symbol" placeholder="BTC"></div>
+        <div class="form-group"><label class="form-label">QTY</label><input type="number" class="form-input" id="cr-qty" placeholder="0.5" step="any"></div>
+        <div class="form-group"><label class="form-label">AVG BUY PRICE (USD)</label><input type="number" class="form-input" id="cr-buy" placeholder="40000" step="any"></div>
+        <div class="form-group"><label class="form-label">CURRENT PRICE (USD)</label><input type="number" class="form-input" id="cr-price" placeholder="95000" step="any"></div>
+        <button class="add-btn" onclick="addCrypto()">+ Add</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Update Current Prices</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">Enter the latest market price for each asset to recalculate P&L</div>
+      <div id="crypto-price-inputs"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ==============================
+// STATE
+// ==============================
+let state = {
+  rates: {
+    goldAed: 569.5,
+    eurAed: 4.305,
+    eurDzdOfficial: 155,
+    eurDzdParallel: 280,
+    aedDzdParallel: 65,
+    usdAed: 3.6725
+  },
+  cash: {
+    aed: 62646,
+    eur: 9189,
+    dzd: 95588.58,
+    emergencyBuffer: 50000
+  },
+  gold: [
+    { date: '2026-01-29', grams: 15.79, karat: 24, pricePerGram: 664.97 },
+    { date: '2026-01-29', grams: 1.68, karat: 18, pricePerGram: 571.428 }
+  ],
+  property: {
+    status: 'Target / Not yet purchased',
+    location: 'Tlemcen, Algeria',
+    type: 'F3 Apartment',
+    date: '',
+    targetDzd: 0,
+    actualDzd: 0,
+    currentValueDzd: 0,
+    monthlyRentDzd: 0,
+    appreciation: 8,
+    rentGrowth: 0
+  },
+  savings: {},
+  crypto: [],
+  history: [
+    { date: '2026-05-01', aedCash: 62646, eurAed: 39558.645, goldAed: 9709.975, dzdAed: 1470.593538, propertyAed: 0 }
+  ],
+  lastUpdated: '2026-05-01'
+};
+
+// Load from localStorage if exists
+try {
+  const saved = localStorage.getItem('investmentTracker');
+  if (saved) state = JSON.parse(saved);
+} catch(e) {}
+
+function save() {
+  localStorage.setItem('investmentTracker', JSON.stringify(state));
+}
+
+// ==============================
+// CALCULATIONS
+// ==============================
+function grams18k(grams, karat) {
+  // Converts any karat gold into 18K-equivalent grams
+  return grams * (karat / 18);
+}
+
+function goldCurrentValue(grams, karat) {
+  // Convert 18K-equivalent grams back into actual AED value
+  // If state.rates.goldAed is 24K spot:
+  return grams18k(grams, karat) * (18 / 24) * state.rates.goldAed;
+}
+
+function goldCost(grams, price) {
+  return grams * price;
+}
+
+function totalGoldGrams() {
+  return state.gold.reduce((s, g) => s + g.grams, 0);
+}
+
+function totalGoldGrams18k() {
+  return state.gold.reduce((s, g) => s + grams18k(g.grams, g.karat), 0);
+}
+
+function totalGoldCostAed() {
+  return state.gold.reduce((s, g) => s + goldCost(g.grams, g.pricePerGram), 0);
+}
+
+function totalGoldValueAed() {
+  // Convert 18K-equivalent portfolio grams into true market AED value
+  return totalGoldGrams18k() * (18 / 24) * state.rates.goldAed;
+}
+
+function eurValueAed() {
+  return state.cash.eur * state.rates.eurAed;
+}
+
+function dzdValueAed() {
+  return state.cash.dzd / state.rates.aedDzdParallel;
+}
+
+function portfolioValueAed() {
+  return (
+    state.cash.aed +
+    eurValueAed() +
+    totalGoldValueAed() +
+    dzdValueAed() +
+    totalCryptoValueUsd() * state.rates.usdAed
+  );
+}
+
+function portfolioValueEur() {
+  return portfolioValueAed() / state.rates.eurAed;
+}
+
+function portfolioValueDzd() {
+  return portfolioValueAed() * state.rates.aedDzdParallel;
+}
+
+// ==============================
+// FORMAT HELPERS
+// ==============================
+function fmt(n, dec=2) {
+  if (n == null || isNaN(n)) return '—';
+  return n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+
+function fmtPnl(n) {
+  if (n == null || isNaN(n)) return '—';
+  const cls = n >= 0 ? 'green' : 'red';
+  const sign = n >= 0 ? '+' : '';
+  return `<span style="color:var(--${cls})">${sign}${fmt(n)}</span>`;
+}
+
+function fmtPct(n) {
+  if (n == null || isNaN(n)) return '—';
+  const cls = n >= 0 ? 'green' : 'red';
+  const sign = n >= 0 ? '+' : '';
+  return `<span style="color:var(--${cls})">${sign}${(n*100).toFixed(2)}%</span>`;
+}
+
+// ==============================
+// TAB NAVIGATION
+// ==============================
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ==============================
+// RENDER DASHBOARD
+// ==============================
+function renderDashboard() {
+  document.getElementById('lastUpdated').textContent = state.lastUpdated;
+
+  const totalAed = portfolioValueAed();
+  const totalEur = portfolioValueEur();
+  const totalDzd = portfolioValueDzd();
+  const goldPnl = totalGoldValueAed() - totalGoldCostAed();
+  const goldPct = totalGoldCostAed() ? goldPnl / totalGoldCostAed() : 0;
+
+  document.getElementById('d-total-aed').textContent = 'AED ' + fmt(totalAed);
+  document.getElementById('d-total-eur').textContent = '€ ' + fmt(totalEur);
+  document.getElementById('d-total-dzd').textContent = 'Mcent ' +fmt(totalDzd/10000, 3);
+  const pnlEl = document.getElementById('d-gold-pnl');
+  pnlEl.innerHTML = 'AED ' + fmtPnl(goldPnl);
+  pnlEl.className = 'stat-value ' + (goldPnl >= 0 ? 'green' : 'red');
+  document.getElementById('d-gold-pnl-pct').innerHTML = fmtPct(goldPct) + ' on gold';
+
+  const cryptoPnlCard = totalCryptoValueUsd() * state.rates.usdAed - totalCryptoCostUsd() * state.rates.usdAed;
+  const cryptoPctCard = (totalCryptoCostUsd() * state.rates.usdAed) ? cryptoPnlCard / (totalCryptoCostUsd() * state.rates.usdAed) : 0;
+  const cpEl = document.getElementById('d-crypto-pnl');
+  cpEl.innerHTML = (state.crypto||[]).length ? 'USD ' +fmtPnl(cryptoPnlCard) : '<span style="color:var(--text-muted)">—</span>';
+  cpEl.className = 'stat-value ' + (cryptoPnlCard >= 0 ? 'green' : 'red');
+  document.getElementById('d-crypto-pnl-pct').innerHTML = (state.crypto||[]).length ?  fmtPct(cryptoPctCard) + ' on crypto' : 'no holdings';
+
+  // Portfolio table
+  const cryptoAed = totalCryptoValueUsd() * state.rates.usdAed;
+  const cryptoCostAed = totalCryptoCostUsd() * state.rates.usdAed;
+  const cryptoPnlAed = cryptoAed - cryptoCostAed;
+  const cryptoPct = cryptoCostAed ? cryptoPnlAed / cryptoCostAed : 0;
+
+  const totalCost = state.cash.aed + eurValueAed() + totalGoldCostAed() + dzdValueAed() + cryptoCostAed;
+  const rows = [
+    { name: 'AED Cash', qty: fmt(state.cash.aed, 0)+' AED', cost: state.cash.aed, value: state.cash.aed, pnl: 0, pct: 0 },
+    { name: 'EUR Savings', qty: fmt(state.cash.eur, 0)+' EUR', cost: eurValueAed(), value: eurValueAed(), pnl: 0, pct: 0 },
+    { name: 'Physical Gold (18K adj.)', qty: fmt(totalGoldGrams18k(), 3)+' g', cost: totalGoldCostAed(), value: totalGoldValueAed(), pnl: goldPnl, pct: goldPct },
+    { name: 'DZD Cash', qty: fmt(state.cash.dzd, 2)+' DZD', cost: dzdValueAed(), value: dzdValueAed(), pnl: 0, pct: 0 },
+    { name: 'Crypto', qty: (state.crypto||[]).length + ' asset' + ((state.crypto||[]).length !== 1 ? 's' : ''), cost: cryptoCostAed, value: cryptoAed, pnl: cryptoPnlAed, pct: cryptoPct },
+    { name: 'Algeria Property', qty: '—', cost: 0, value: 0, pnl: 0, pct: 0 }
+  ];
+
+  const totalValue = rows.reduce((s, r) => s + r.value, 0);
+  const totalPnl = totalValue - totalCost;
+
+  let html = rows.map(r => `
+    <tr>
+      <td>${r.name}</td>
+      <td class="text-right">${r.qty}</td>
+      <td class="text-right">${fmt(r.cost)}</td>
+      <td class="text-right">${fmt(r.value)}</td>
+      <td class="text-right">${fmtPnl(r.pnl)}</td>
+      <td class="text-right">${fmtPct(r.pct)}</td>
+      <td class="text-right" style="color:var(--text-dim)">${r.value ? fmt(r.value / state.rates.eurAed) : '—'}</td>
+    </tr>
+  `).join('');
+
+  html += `<tr style="border-top: 1px solid var(--border)">
+    <td><strong>TOTAL PORTFOLIO</strong></td>
+    <td></td>
+    <td class="text-right"><strong>${fmt(totalCost)}</strong></td>
+    <td class="text-right"><strong>${fmt(totalValue)}</strong></td>
+    <td class="text-right">${fmtPnl(totalPnl)}</td>
+    <td class="text-right">${fmtPct(totalValue ? totalPnl/totalCost : 0)}</td>
+    <td class="text-right" style="color:var(--blue)"><strong>€ ${fmt(totalValue / state.rates.eurAed)}</strong></td>
+  </tr>`;
+  document.getElementById('portfolio-table').innerHTML = html;
+
+  // Allocation bars — load saved targets or defaults
+  if (!state.allocTargets) state.allocTargets = { aedCash: 50, eurSavings: 36, gold: 10, dzd: 4, crypto: 0, property: 0 };
+  const t = state.allocTargets;
+
+  const allocData = [
+    { key: 'aedCash',    name: 'AED Cash',       value: state.cash.aed,          color: '#d4a843' },
+    { key: 'eurSavings', name: 'EUR Savings',     value: eurValueAed(),            color: '#5b8af0' },
+    { key: 'gold',       name: 'Physical Gold',   value: totalGoldValueAed(),      color: '#f0c86a' },
+    { key: 'dzd',        name: 'DZD Cash',        value: dzdValueAed(),            color: '#9b6dff' },
+    { key: 'crypto',     name: 'Crypto',          value: totalCryptoValueUsd() * state.rates.usdAed, color: '#3dd68c' },
+    { key: 'property',   name: 'Property',        value: (state.property.currentValueDzd || 0) / state.rates.aedDzdParallel, color: '#f05a5a' },
+  ];
+  const totalAlloc = allocData.reduce((s, a) => s + a.value, 0);
+  const targetSum = Object.values(t).reduce((s, v) => s + v, 0);
+
+  document.getElementById('allocation-bars').innerHTML =
+    `<div style="font-size:10px; color:var(--text-muted); margin-bottom:12px; display:flex; justify-content:space-between;">
+       <span>Target total: <span style="color:${Math.abs(targetSum-100)<0.5 ? 'var(--green)' : 'var(--red)'}">${targetSum.toFixed(0)}%</span> <span style="opacity:0.6">(should equal 100%)</span></span>
+     </div>` +
+    allocData.map(a => {
+      const pct = totalAlloc ? (a.value / totalAlloc) * 100 : 0;
+      const tgt = t[a.key] || 0;
+      const over = pct > tgt + 2;
+      const under = pct < tgt - 2;
+      const barColor = over ? '#f05a5a' : under ? '#7a7a9a' : a.color;
+      return `<div class="alloc-row">
+        <div class="alloc-header">
+          <span class="alloc-name" style="display:flex;align-items:center;gap:6px;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${a.color};flex-shrink:0;"></span>
+            ${a.name}
+          </span>
+          <span class="alloc-pct" style="display:flex;align-items:center;gap:6px;">
+            <span style="color:${barColor};font-weight:500;">${pct.toFixed(1)}%</span>
+            <span style="color:var(--text-muted)">/ target</span>
+            <input type="number" min="0" max="100" step="1"
+              value="${tgt}"
+              style="width:42px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-family:'DM Mono',monospace;font-size:10px;padding:1px 4px;text-align:center;outline:none;"
+              onchange="updateAllocTarget('${a.key}', this.value)">
+            <span style="color:var(--text-muted)">%</span>
+          </span>
+        </div>
+        <div class="alloc-bar-bg">
+          <div class="alloc-bar-fill" style="width:${Math.min(pct, 100)}%; background:${barColor}"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+  // Algeria purchasing power
+  const ppData = [
+    { name: 'AED Cash', official: state.cash.aed * (state.rates.eurDzdOfficial / state.rates.eurAed), parallel: state.cash.aed * state.rates.aedDzdParallel },
+    { name: 'EUR Savings', official: state.cash.eur * state.rates.eurDzdOfficial, parallel: state.cash.eur * state.rates.eurDzdParallel },
+    { name: 'DZD Cash', official: state.cash.dzd, parallel: state.cash.dzd },
+    { name: 'Gold (via AED)', official: totalGoldValueAed() * (state.rates.eurDzdOfficial / state.rates.eurAed), parallel: totalGoldValueAed() * state.rates.aedDzdParallel },
+  ];
+  const ppTotal = { official: ppData.reduce((s, p) => s + p.official, 0), parallel: ppData.reduce((s, p) => s + p.parallel, 0) };
+  document.getElementById('purchasing-power').innerHTML = [
+    // Column headers
+    `<div class="pp-row" style="border-bottom: 1px solid var(--border); padding-bottom:8px; margin-bottom:2px;">
+      <span style="color:var(--text-muted); font-size:10px; letter-spacing:0.5px;">ASSET</span>
+      <div class="pp-values">
+        <span style="color:var(--text-muted); font-size:10px; letter-spacing:0.5px; min-width:90px; text-align:right;">🏦 BANK RATE</span>
+        <span style="color:var(--text-muted); font-size:10px; letter-spacing:0.5px; min-width:90px; text-align:right;">🟢 PARALLEL</span>
+        <span style="color:var(--text-muted); font-size:10px; letter-spacing:0.5px; min-width:40px; text-align:right;">PREMIUM</span>
+      </div>
+    </div>`,
+    ...ppData.map(p => {
+      const prem = p.official ? (p.parallel - p.official) / p.official : 0;
+      return `<div class="pp-row">
+        <span class="pp-asset">${p.name}</span>
+        <div class="pp-values">
+          <span class="pp-official" style="min-width:90px; text-align:right;">${fmt(p.official, 0)}</span>
+          <span class="pp-parallel" style="min-width:90px; text-align:right;">${fmt(p.parallel, 0)}</span>
+          <span class="pp-premium" style="min-width:40px; text-align:right;">+${(prem*100).toFixed(1)}%</span>
+        </div>
+      </div>`;
+    }),
+    `<div class="pp-row" style="font-weight:600; border-top: 1px solid var(--border); margin-top:2px; padding-top:10px;">
+      <span style="color:var(--text)">TOTAL (DZD)</span>
+      <div class="pp-values">
+        <span class="pp-official" style="min-width:90px; text-align:right;">${fmt(ppTotal.official, 0)}</span>
+        <span class="pp-parallel" style="min-width:90px; text-align:right; font-weight:700;">${fmt(ppTotal.parallel, 0)}</span>
+        <span style="min-width:40px;"></span>
+      </div>
+    </div>`
+  ].join('');
+}
+
+// ==============================
+// RENDER RATES
+// ==============================
+function renderRates() {
+  const rateFields = [
+    { key: 'goldAed', label: 'Gold 24K (AED/gram)', note: 'Dubai Gold Souk / DMCC' },
+    { key: 'eurAed', label: 'EUR / AED', note: 'ECB / bank rate' },
+    { key: 'eurDzdOfficial', label: 'EUR / DZD (Official)', note: 'Banque d\'Algérie' },
+    { key: 'eurDzdParallel', label: 'EUR / DZD (Parallel)', note: 'Square Port-Saïd' },
+    { key: 'aedDzdParallel', label: 'AED / DZD (Parallel)', note: 'Derived / Square rate' },
+    { key: 'usdAed', label: 'USD / AED', note: 'Fixed peg' }
+  ];
+
+  document.getElementById('rates-grid').innerHTML = rateFields.map(f => `
+    <div class="rate-card">
+      <div class="rate-label">${f.label}</div>
+      <input class="rate-input" id="rate-${f.key}" type="number" step="0.001" value="${state.rates[f.key]}">
+      <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">${f.note}</div>
+    </div>
+  `).join('');
+
+  renderDerivedRates();
+}
+
+function renderDerivedRates() {
+  const eurParallelVsOfficial = state.rates.eurDzdOfficial ? (state.rates.eurDzdParallel - state.rates.eurDzdOfficial) / state.rates.eurDzdOfficial : 0;
+  const aedDzdViaEur = (state.rates.eurDzdParallel / state.rates.eurAed);
+  document.getElementById('derived-rates').innerHTML = [
+    { label: 'EUR parallel vs official gap', value: (eurParallelVsOfficial * 100).toFixed(2) + '%', note: 'Parallel premium' },
+    { label: 'AED/DZD via EUR (parallel)', value: fmt(aedDzdViaEur, 2), note: 'Cross rate' }
+  ].map(d => `<div class="rate-card">
+    <div class="rate-label">${d.label}</div>
+    <div class="rate-value">${d.value}</div>
+    <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">${d.note}</div>
+  </div>`).join('');
+}
+
+function saveRates() {
+  const keys = ['goldAed', 'eurAed', 'eurDzdOfficial', 'eurDzdParallel', 'aedDzdParallel', 'usdAed'];
+  keys.forEach(k => {
+    const el = document.getElementById('rate-' + k);
+    if (el) state.rates[k] = parseFloat(el.value) || state.rates[k];
+  });
+  state.lastUpdated = new Date().toISOString().split('T')[0];
+  save();
+  renderAll();
+  const el = document.getElementById('rates-saved');
+  el.style.opacity = '1';
+  setTimeout(() => el.style.opacity = '0', 2000);
+}
+
+// ==============================
+// RENDER GOLD
+// ==============================
+function renderGold() {
+  document.getElementById('g-grams').textContent = fmt(totalGoldGrams(), 3) + ' g';
+  document.getElementById('g-value-aed').textContent = 'AED ' + fmt(totalGoldValueAed());
+  const pnl = totalGoldValueAed() - totalGoldCostAed();
+  const pct = totalGoldCostAed() ? pnl / totalGoldCostAed() : 0;
+  document.getElementById('g-pnl').innerHTML = fmtPnl(pnl);
+  document.getElementById('g-pnl').className = 'stat-value ' + (pnl >= 0 ? 'green' : 'red');
+  document.getElementById('g-pnl-pct').innerHTML = fmtPct(pct);
+  const avgCost = totalGoldGrams() ? totalGoldCostAed() / totalGoldGrams() : 0;
+  document.getElementById('g-avg-cost').textContent = 'AED ' + fmt(avgCost);
+  document.getElementById('g-spot').textContent = 'spot ' + fmt(state.rates.goldAed);
+
+  // Table
+  document.getElementById('gold-table').innerHTML = state.gold.map((g, i) => {
+    const cost = goldCost(g.grams, g.pricePerGram);
+    const val = goldCurrentValue(g.grams, g.karat);
+    const gpnl = val - cost;
+    const gpct = cost ? gpnl / cost : 0;
+    return `<tr>
+      <td>${g.date}</td>
+      <td class="text-right">${fmt(g.grams, 3)}</td>
+      <td class="text-right">${fmt(grams18k(g.grams, g.karat), 3)}</td>
+      <td class="text-right">${g.karat}K</td>
+      <td class="text-right">${fmt(g.pricePerGram)}</td>
+      <td class="text-right">${fmt(cost)}</td>
+      <td class="text-right">${fmt(val)}</td>
+      <td class="text-right">${fmtPnl(gpnl)} <span style="color:var(--text-muted); font-size:10px;">${(gpct*100).toFixed(1)}%</span></td>
+      <td><button class="del-btn" onclick="deleteGold(${i})">×</button></td>
+    </tr>`;
+  }).join('') + `<tr style="border-top:1px solid var(--border)">
+    <td><strong>TOTALS</strong></td>
+    <td class="text-right"><strong>${fmt(totalGoldGrams(), 3)}</strong></td>
+    <td class="text-right"><strong>${fmt(totalGoldGrams18k(), 3)}</strong></td>
+    <td class="text-right">${fmt(totalGoldGrams() ? totalGoldCostAed()/totalGoldGrams() : 0)} avg</td>
+    <td></td>
+    <td class="text-right"><strong>${fmt(totalGoldCostAed())}</strong></td>
+    <td class="text-right"><strong>${fmt(totalGoldValueAed())}</strong></td>
+    <td class="text-right">${fmtPnl(totalGoldValueAed() - totalGoldCostAed())}</td>
+    <td></td>
+  </tr>`;
+
+  // Initialize topup
+  document.getElementById('topup-price').value = state.rates.goldAed;
+  calcTopup();
+}
+
+function addGold() {
+  const date = document.getElementById('g-date').value;
+  const grams = parseFloat(document.getElementById('g-new-grams').value);
+  const karat = parseFloat(document.getElementById('g-karat').value) || 24;
+  const price = parseFloat(document.getElementById('g-price').value);
+  if (!grams || !price) return;
+  state.gold.push({ date: date || new Date().toISOString().split('T')[0], grams, karat, pricePerGram: price });
+  save(); renderAll();
+}
+
+function deleteGold(i) {
+  state.gold.splice(i, 1);
+  save(); renderAll();
+}
+
+function calcTopup() {
+  const planned = parseFloat(document.getElementById('topup-grams').value) || 0;
+  const price = parseFloat(document.getElementById('topup-price').value) || state.rates.goldAed;
+  const currentGrams = totalGoldGrams();
+  const currentCost = totalGoldCostAed();
+  const newGrams = currentGrams + planned;
+  const newCost = currentCost + (planned * price);
+  const newAvg = newGrams ? newCost / newGrams : 0;
+  document.getElementById('topup-results').innerHTML = [
+    { label: 'New avg cost (AED/g)', value: 'AED ' + fmt(newAvg), color: 'var(--gold)' },
+    { label: 'Cost of top-up (AED)', value: 'AED ' + fmt(planned * price), color: 'var(--blue)' },
+    { label: 'Total grams after', value: fmt(newGrams, 3) + ' g', color: 'var(--text)' }
+  ].map(d => `<div class="card" style="padding:14px">
+    <div class="stat-label">${d.label}</div>
+    <div style="font-size:18px; color:${d.color}; font-weight:500; margin-top:4px">${d.value}</div>
+  </div>`).join('');
+}
+
+// ==============================
+// RENDER CASH
+// ==============================
+function renderCash() {
+  document.getElementById('c-aed').textContent = 'AED ' + fmt(state.cash.aed, 0);
+  document.getElementById('c-buffer').textContent = fmt(state.cash.emergencyBuffer, 0);
+  document.getElementById('c-surplus').textContent = fmt(Math.max(0, state.cash.aed - state.cash.emergencyBuffer), 0);
+  document.getElementById('c-eur').textContent = '€ ' + fmt(state.cash.eur, 2);
+  document.getElementById('c-eur-aed').textContent = '≈ ' + fmt(eurValueAed()) + ' AED';
+  document.getElementById('c-eur-dzd').textContent = fmt(state.cash.eur * state.rates.eurDzdParallel, 0) + ' DZD';
+  document.getElementById('c-dzd').textContent = fmt(state.cash.dzd, 2) + ' DZD';
+  document.getElementById('c-dzd-eur').textContent = '≈ € ' + fmt(state.cash.dzd / state.rates.eurDzdParallel, 2) + ' (parallel)';
+  document.getElementById('c-dzd-aed').textContent = 'AED ' + fmt(dzdValueAed(), 2);
+
+  // Inputs sync
+  document.getElementById('edit-aed').value = state.cash.aed;
+  document.getElementById('edit-eur').value = state.cash.eur;
+  document.getElementById('edit-dzd').value = state.cash.dzd;
+  document.getElementById('edit-buffer').value = state.cash.emergencyBuffer;
+
+  // Savings tracker
+  const months = ['May 2026','Jun 2026','Jul 2026','Aug 2026','Sep 2026','Oct 2026','Nov 2026','Dec 2026'];
+  let running = state.cash.eur;
+  document.getElementById('savings-table').innerHTML = months.map(m => {
+    const saved = state.savings[m] || 0;
+    running += saved;
+    return `<tr>
+      <td>${m}</td>
+      <td class="text-right"><input type="number" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;width:80px;text-align:right;outline:none;" value="${saved||''}" placeholder="0" oninput="updateSavings('${m}', this.value)"></td>
+      <td class="text-right" style="color:var(--blue)">€ ${fmt(running, 0)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function updateCash() {
+  state.cash.aed = parseFloat(document.getElementById('edit-aed').value) || 0;
+  state.cash.eur = parseFloat(document.getElementById('edit-eur').value) || 0;
+  state.cash.dzd = parseFloat(document.getElementById('edit-dzd').value) || 0;
+  state.cash.emergencyBuffer = parseFloat(document.getElementById('edit-buffer').value) || 50000;
+  save(); renderAll();
+}
+
+function updateSavings(month, val) {
+  state.savings[month] = parseFloat(val) || 0;
+  save();
+  renderCash();
+}
+
+// ==============================
+// RENDER PROPERTY
+// ==============================
+function renderProperty() {
+  document.getElementById('p-status').value = state.property.status;
+  document.getElementById('p-location').value = state.property.location;
+  document.getElementById('p-type').value = state.property.type;
+  document.getElementById('p-date').value = state.property.date;
+  document.getElementById('p-target').value = state.property.targetDzd || '';
+  document.getElementById('p-actual').value = state.property.actualDzd || '';
+  document.getElementById('p-value').value = state.property.currentValueDzd || '';
+  document.getElementById('p-rent').value = state.property.monthlyRentDzd || '';
+  document.getElementById('p-appreciation').value = state.property.appreciation;
+  document.getElementById('p-rent-growth').value = state.property.rentGrowth;
+  calcProperty();
+}
+
+function calcProperty() {
+  // Sync inputs back to state
+  state.property.targetDzd = parseFloat(document.getElementById('p-target').value) || 0;
+  state.property.actualDzd = parseFloat(document.getElementById('p-actual').value) || 0;
+  state.property.currentValueDzd = parseFloat(document.getElementById('p-value').value) || 0;
+  state.property.monthlyRentDzd = parseFloat(document.getElementById('p-rent').value) || 0;
+  state.property.appreciation = parseFloat(document.getElementById('p-appreciation').value) || 8;
+  state.property.rentGrowth = parseFloat(document.getElementById('p-rent-growth').value) || 0;
+  state.property.status = document.getElementById('p-status').value;
+  state.property.location = document.getElementById('p-location').value;
+  state.property.type = document.getElementById('p-type').value;
+  state.property.date = document.getElementById('p-date').value;
+  save();
+
+  const p = state.property;
+  const annualRent = p.monthlyRentDzd * 12;
+  const costAed = p.actualDzd / state.rates.aedDzdParallel;
+  const costEurParallel = p.actualDzd / state.rates.eurDzdParallel;
+  const costEurOfficial = p.actualDzd / state.rates.eurDzdOfficial;
+  const grossYield = p.actualDzd ? annualRent / p.actualDzd : 0;
+  const annualRentEur = annualRent / state.rates.eurDzdParallel;
+
+  document.getElementById('property-stats').innerHTML = [
+    { label: 'Annual Rent (DZD)', value: fmt(annualRent, 0) },
+    { label: 'Gross Yield %', value: (grossYield * 100).toFixed(2) + '%' },
+    { label: 'Annual Rent (EUR parallel)', value: '€ ' + fmt(annualRentEur, 0) },
+    { label: 'Cost in EUR (parallel)', value: '€ ' + fmt(costEurParallel, 0) },
+    { label: 'Cost in EUR (official)', value: '€ ' + fmt(costEurOfficial, 0) },
+    { label: 'Cost in AED equiv.', value: 'AED ' + fmt(costAed, 0) }
+  ].map(d => `<div class="pp-row"><span class="pp-asset">${d.label}</span><span style="color:var(--text)">${d.value}</span></div>`).join('');
+
+  // 5-year projection
+  const apprRate = p.appreciation / 100;
+  const rentGrowthRate = p.rentGrowth / 100;
+  const baseValue = p.actualDzd || p.targetDzd || 0;
+  let cumRent = 0, annualR = annualRent;
+  const proj = [{ year: 'Purchase', value: baseValue, cumRent: 0 }];
+  for (let y = 1; y <= 5; y++) {
+    const val = baseValue * Math.pow(1 + apprRate, y);
+    annualR *= (1 + rentGrowthRate);
+    cumRent += annualR;
+    proj.push({ year: 'Year ' + y, value: val, cumRent });
+  }
+  document.getElementById('property-projection').innerHTML = proj.map(r => `<tr>
+    <td>${r.year}</td>
+    <td class="text-right">${fmt(r.value, 0)} DZD</td>
+    <td class="text-right">${fmt(r.cumRent, 0)} DZD</td>
+    <td class="text-right" style="color:var(--green)">€ ${fmt(r.value / state.rates.eurDzdParallel, 0)}</td>
+  </tr>`).join('');
+}
+
+// ==============================
+// RENDER HISTORY
+// ==============================
+function renderHistory() {
+  document.getElementById('h-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('history-table').innerHTML = state.history.map((h, i) => `<tr>
+    <td>${h.date}</td>
+    <td class="text-right">${fmt(h.aedCash, 0)}</td>
+    <td class="text-right">${fmt(h.eurAed, 0)}</td>
+    <td class="text-right">${fmt(h.goldAed, 0)}</td>
+    <td class="text-right">${fmt(h.dzdAed, 0)}</td>
+    <td class="text-right">${fmt(h.propertyAed, 0)}</td>
+    <td class="text-right" style="color:var(--gold); font-weight:600">${fmt(h.aedCash + h.eurAed + h.goldAed + h.dzdAed + h.propertyAed, 0)}</td>
+    <td><button class="del-btn" onclick="deleteHistory(${i})">×</button></td>
+  </tr>`).join('');
+}
+
+function logSnapshot() {
+  const date = document.getElementById('h-date').value || new Date().toISOString().split('T')[0];
+  state.history.unshift({
+    date,
+    aedCash: state.cash.aed,
+    eurAed: eurValueAed(),
+    goldAed: totalGoldValueAed(),
+    dzdAed: dzdValueAed(),
+    propertyAed: state.property.currentValueDzd / state.rates.aedDzdParallel
+  });
+  state.lastUpdated = date;
+  save(); renderAll();
+}
+
+function deleteHistory(i) {
+  state.history.splice(i, 1);
+  save(); renderHistory();
+}
+
+function updateAllocTarget(key, val) {
+  if (!state.allocTargets) state.allocTargets = {};
+  state.allocTargets[key] = parseFloat(val) || 0;
+  save();
+  renderDashboard();
+}
+
+// ==============================
+// RENDER ALL
+// ==============================
+function renderAll() {
+  renderDashboard();
+  renderRates();
+  renderGold();
+  renderCash();
+  renderProperty();
+  renderHistory();
+  renderCrypto();
+}
+
+// ==============================
+// CRYPTO
+// ==============================
+function totalCryptoValueUsd() {
+  return (state.crypto || []).reduce((s, c) => s + c.qty * c.currentPrice, 0);
+}
+
+function totalCryptoCostUsd() {
+  return (state.crypto || []).reduce((s, c) => s + c.qty * c.buyPrice, 0);
+}
+
+function renderCrypto() {
+  if (!state.crypto) state.crypto = [];
+  const totalVal = totalCryptoValueUsd();
+  const totalCost = totalCryptoCostUsd();
+  const totalPnl = totalVal - totalCost;
+  const totalPct = totalCost ? totalPnl / totalCost : 0;
+  const totalAed = totalVal * state.rates.usdAed;
+  const totalEur = totalAed / state.rates.eurAed;
+
+  document.getElementById('cr-total-usd').textContent = '$ ' + fmt(totalVal);
+  document.getElementById('cr-total-aed').textContent = 'AED ' + fmt(totalAed);
+  document.getElementById('cr-total-eur').textContent = '€ ' + fmt(totalEur);
+  document.getElementById('cr-total-pnl').innerHTML = fmtPnl(totalPnl);
+  document.getElementById('cr-total-pnl').className = 'stat-value ' + (totalPnl >= 0 ? 'green' : 'red');
+  document.getElementById('cr-total-pnl-pct').innerHTML = fmtPct(totalPct);
+
+  // Holdings table
+  let html = state.crypto.map((c, i) => {
+    const cost = c.qty * c.buyPrice;
+    const val = c.qty * c.currentPrice;
+    const pnl = val - cost;
+    const pct = cost ? pnl / cost : 0;
+    const symColor = cryptoColor(c.symbol);
+    return `<tr>
+      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${symColor};margin-right:7px;"></span>${c.name}</td>
+      <td><span class="badge badge-dim">${c.symbol.toUpperCase()}</span></td>
+      <td class="text-right">${fmt(c.qty, c.qty < 1 ? 6 : 4)}</td>
+      <td class="text-right" style="color:var(--text-dim)">$${fmt(c.buyPrice)}</td>
+      <td class="text-right">$${fmt(c.currentPrice)}</td>
+      <td class="text-right" style="color:var(--text-dim)">$${fmt(cost)}</td>
+      <td class="text-right">$${fmt(val)}</td>
+      <td class="text-right">${fmtPnl(pnl)}</td>
+      <td class="text-right">${fmtPct(pct)}</td>
+      <td><button class="del-btn" onclick="deleteCrypto(${i})">×</button></td>
+    </tr>`;
+  }).join('');
+
+  if (state.crypto.length) {
+    html += `<tr style="border-top:1px solid var(--border)">
+      <td colspan="5"><strong>TOTAL</strong></td>
+      <td class="text-right"><strong>$${fmt(totalCost)}</strong></td>
+      <td class="text-right"><strong>$${fmt(totalVal)}</strong></td>
+      <td class="text-right">${fmtPnl(totalPnl)}</td>
+      <td class="text-right">${fmtPct(totalPct)}</td>
+      <td></td>
+    </tr>`;
+  } else {
+    html = `<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:24px;">No holdings yet — add your first crypto above</td></tr>`;
+  }
+  document.getElementById('crypto-table').innerHTML = html;
+
+  // Price update inputs
+  if (!state.crypto.length) {
+    document.getElementById('crypto-price-inputs').innerHTML = `<div style="color:var(--text-muted);font-size:12px;">Add holdings first.</div>`;
+    return;
+  }
+
+  document.getElementById('crypto-price-inputs').innerHTML = `
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+      <button onclick="fetchCryptoPrices()" id="fetch-btn"
+        style="padding:9px 18px; background:var(--surface2); border:1px solid var(--border); color:var(--blue);
+               font-family:'DM Mono',monospace; font-size:11px; font-weight:500; border-radius:8px;
+               cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:7px;">
+        <span id="fetch-icon">⚡</span> Auto-fetch prices
+      </button>
+      <span id="fetch-status" style="font-size:11px; color:var(--text-muted);"></span>
+    </div>
+    <div class="form-row" id="price-input-row">
+      ${state.crypto.map((c, i) => `
+        <div class="form-group">
+          <label class="form-label">${c.symbol.toUpperCase()} PRICE (USD)</label>
+          <input type="text" inputmode="decimal" class="form-input" id="price-input-${i}"
+            value="${c.currentPrice}"
+            onblur="commitCryptoPrice(${i}, this.value)"
+            onkeydown="if(event.key==='Enter') this.blur()">
+        </div>`).join('')}
+    </div>`;
+}
+
+function cryptoColor(symbol) {
+  const colors = { BTC:'#f7931a', ETH:'#627eea', BNB:'#f3ba2f', SOL:'#9945ff', ADA:'#0033ad', XRP:'#346aa9', DOT:'#e6007a', AVAX:'#e84142', MATIC:'#8247e5', LINK:'#2a5ada' };
+  return colors[symbol.toUpperCase()] || '#5b8af0';
+}
+
+function addCrypto() {
+  const name = document.getElementById('cr-name').value.trim();
+  const symbol = document.getElementById('cr-symbol').value.trim();
+  const qty = parseFloat(document.getElementById('cr-qty').value);
+  const buyPrice = parseFloat(document.getElementById('cr-buy').value);
+  const currentPrice = parseFloat(document.getElementById('cr-price').value);
+  if (!name || !symbol || !qty || !buyPrice || !currentPrice) return;
+  if (!state.crypto) state.crypto = [];
+  state.crypto.push({ name, symbol, qty, buyPrice, currentPrice });
+  document.getElementById('cr-name').value = '';
+  document.getElementById('cr-symbol').value = '';
+  document.getElementById('cr-qty').value = '';
+  document.getElementById('cr-buy').value = '';
+  document.getElementById('cr-price').value = '';
+  save(); renderAll();
+}
+
+function deleteCrypto(i) {
+  state.crypto.splice(i, 1);
+  save(); renderAll();
+}
+
+function commitCryptoPrice(i, val) {
+  const parsed = parseFloat(val);
+  if (!isNaN(parsed) && parsed > 0) {
+    state.crypto[i].currentPrice = parsed;
+    save();
+    renderCrypto();
+  }
+}
+
+async function fetchCryptoPrices() {
+  if (!state.crypto.length) return;
+  const btn = document.getElementById('fetch-btn');
+  const icon = document.getElementById('fetch-icon');
+  const status = document.getElementById('fetch-status');
+
+  btn.disabled = true;
+  icon.textContent = '⏳';
+  status.textContent = 'Fetching from CoinGecko...';
+  status.style.color = 'var(--text-muted)';
+
+  // Build comma-separated list of symbols lowercased for CoinGecko IDs
+  // CoinGecko uses IDs not symbols, so we map common ones and fall back to symbol
+  const symbolToId = {
+    BTC:'bitcoin', ETH:'ethereum', BNB:'binancecoin', SOL:'solana',
+    ADA:'cardano', XRP:'ripple', DOT:'polkadot', AVAX:'avalanche-2',
+    MATIC:'matic-network', LINK:'chainlink', LTC:'litecoin',
+    UNI:'uniswap', ATOM:'cosmos', ALGO:'algorand', VET:'vechain',
+    FTM:'fantom', NEAR:'near', APT:'aptos', ARB:'arbitrum',
+    OP:'optimism', DOGE:'dogecoin', SHIB:'shiba-inu', TON:'the-open-network',
+    TRX:'tron', HBAR:'hedera-hashgraph', ICP:'internet-computer',
+    PEPE:'pepe', WLD:'worldcoin-wld', INJ:'injective-protocol',
+    SUI:'sui', SEI:'sei-network', TIA:'celestia', JUP:'jupiter-exchange-solana'
+  };
+
+  const ids = state.crypto.map(c => symbolToId[c.symbol.toUpperCase()] || c.symbol.toLowerCase());
+  const idString = ids.join(',');
+
+  try {
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${idString}&vs_currencies=usd`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('API error ' + res.status);
+    const data = await res.json();
+
+    let updated = 0;
+    state.crypto.forEach((c, i) => {
+      const id = ids[i];
+      if (data[id] && data[id].usd) {
+        state.crypto[i].currentPrice = data[id].usd;
+        updated++;
+      }
+    });
+
+    save();
+    renderCrypto();
+    status.textContent = updated === state.crypto.length
+      ? `✓ All ${updated} prices updated`
+      : `✓ ${updated}/${state.crypto.length} updated — some symbols not found`;
+    status.style.color = 'var(--green)';
+  } catch (err) {
+    status.textContent = '✗ Fetch failed — check connection or try again';
+    status.style.color = 'var(--red)';
+    icon.textContent = '⚡';
+    btn.disabled = false;
+  }
+}
+
+// ==============================
+// EXPORT / IMPORT
+// ==============================
+function exportData() {
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const date = new Date().toISOString().split('T')[0];
+  a.download = 'investment_tracker_' + date + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.rates || !imported.cash) throw new Error('Invalid file');
+      state = imported;
+      save();
+      renderAll();
+      const toast = document.getElementById('import-toast');
+      toast.style.opacity = '1';
+      setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+    } catch(err) {
+      alert('Failed to import: invalid or corrupted JSON file.');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ==============================
+// THEME
+// ==============================
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+}
+
+// Boot
+if (localStorage.getItem('theme') === 'light') {
+  document.documentElement.classList.add('light');
+}
+renderAll();
+</script>
+</body>
+</html>
